@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.RestClient;
+import org.springframework.scheduling.annotation.Scheduled;
+
 
 @Controller
 public class WorkerController {
@@ -16,10 +18,17 @@ public class WorkerController {
     private Worker self;
 
     @EventListener(ApplicationReadyEvent.class)
-    public void afterStartup(){
+    public void afterStartup() {
         this.hostname = System.getenv().get("HOSTNAME");
-        if (this.hostname!= null){
+        if (this.hostname != null) {
             this.self = new Worker(hostname);
+            registerWorker();
+        }
+    }
+
+    @Scheduled(fixedRate = 60000) // 1 minute
+    public void registerWorker() {
+        if (this.self != null) {
             RestClient restClient = RestClient.create();
             restClient.post()
                     .uri("http://registery:8081/workers")
@@ -27,8 +36,9 @@ public class WorkerController {
                     .body(this.self).retrieve();
         }
     }
+
     @GetMapping("/hello2")
-    public ResponseEntity<String> hello(){
+    public ResponseEntity<String> hello() {
         return new ResponseEntity<>(hostname + " says hello!", HttpStatus.OK);
     }
 }

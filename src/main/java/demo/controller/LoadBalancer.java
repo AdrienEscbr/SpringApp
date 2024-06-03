@@ -13,25 +13,41 @@ import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import java.util.Random;
+
 @Controller
 public class LoadBalancer {
     private List<Worker> workers;
-
     private int index = 0;
+    private final Random random = new Random();
+
+    @PostMapping("/updateWorkers")
+    public ResponseEntity<Void> updateWorkers(@RequestBody List<Worker> workers) {
+        this.workers = workers;
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 
     @GetMapping("/hi")
-    public ResponseEntity<String> hello() throws JsonMappingException, JsonProcessingException {
-        RestClient restClient = RestClient.create();
-        String r = restClient.get().uri("http://registery:8081/workers")
-                .retrieve().body(String.class);
-        ObjectMapper mapper = new ObjectMapper();
-        this.workers = mapper.readValue(r, new TypeReference<List<Worker>>() {
-        });
-
-        this.index = (this.index + 1) % this.workers.size();
-        String uri = "http://" + this.workers.get(this.index).getHostname() + ":8081/hello2";
-        String rw = restClient.get().uri(uri).retrieve().body(String.class);
-
-        return new ResponseEntity<>(rw, HttpStatus.OK);
+    public ResponseEntity<String> hello() {
+        if (workers == null || workers.isEmpty()) {
+            return new ResponseEntity<>("No active workers available", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        
+        int attempts = 0;
+        while (attempts < workers.size()) {
+            this.index = random.nextInt(workers.size());
+            String uri = "http://" + this.workers.get(this.index).getHostname() + ":8081/hello2";
+            try {
+                RestClient restClient = RestClient.create();
+                String rw = restClient.get().uri(uri).retrieve().body(String.class);
+                return new ResponseEntity<>(rw, HttpStatus.OK);
+            } catch (Exception e) {
+                attempts++;
+            }
+        }        
+        return new ResponseEntity<>("All workers are unresponsive", HttpStatus.SERVICE_UNAVAILABLE);
     }
 }
