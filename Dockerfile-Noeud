@@ -1,0 +1,7 @@
+FROM docker:latest
+
+# Install Docker
+RUN apk add --no-cache docker
+
+# Start Docker daemon
+CMD ["dockerd"]

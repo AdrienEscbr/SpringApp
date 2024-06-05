@@ -1,13 +1,15 @@
 version: "3.8"
 services:
   rest-user:
-    # image: gestiondeprojet-loginapp:latest
     build:
       context: .
       dockerfile: Dockerfile
     container_name: rest-user
     ports:
       - "8081:8081"
+    networks:
+      - lb-net
+
   login:
     build:
       context: .
@@ -15,4 +17,28 @@ services:
     container_name: login
     ports:
       - "8082:8081"
+    networks:
+      - lb-net
 
+  noeud:
+    build:
+      context: .
+      dockerfile: Dockerfile-Noeud
+    container_name: noeud
+    ports:
+      - "2375:2375"
+    privileged: true
+    networks:
+      - lb-net
+    command: >
+      sh -c "
+      dockerd &
+      while ! curl -sSf http://registery:8081/registerNoeud -X POST; do
+        sleep 5;
+      done;
+      tail -f /dev/null
+      "
+
+networks:
+  lb-net:
+    driver: bridge
