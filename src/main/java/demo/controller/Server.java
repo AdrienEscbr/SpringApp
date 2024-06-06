@@ -41,7 +41,6 @@ public class Server {
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
 
-                // Replace with your actual worker configuration JSON
                 String workerConfig = "{ \"Image\": \"gestiondeprojet-loginapp:latest\", \"ExposedPorts\": { \"8081/tcp\": {} } }";
 
                 HttpEntity<String> request = new HttpEntity<>(workerConfig, headers);
